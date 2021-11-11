@@ -14,29 +14,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public class Main extends javafx.application.Application {
     Socket socket;
     TextArea textArea;
-
     public void startClient(String IP, int port){//클라이언트 동작 메서드
-        Thread thread = new Thread(){
-            public void run(){
-                try{
-                   socket = new Socket(IP, port);
-                   receive();
-                } catch(Exception e){
-                    if(!socket.isClosed()){
-                        stopClient();
-                        System.out.println("[서버 접속 실패]");
-                        Platform.exit();
-                    }
+        Thread thread = new Thread(() -> {
+            try {
+                socket = new Socket(IP, port);
+                receive();
+            } catch (Exception e) {
+                if (!socket.isClosed()) {
+                    stopClient();
+                    System.out.println("[서버 접속 실패]");
+                    Platform.exit();
                 }
             }
-        };
+        });
         thread.start();
     }
-
     public void stopClient(){//클라이언트 종료 메서드
         try{
             if(socket != null && !socket.isClosed()){
@@ -46,7 +44,6 @@ public class Main extends javafx.application.Application {
             e.printStackTrace();
         }
     }
-
     public void receive(){//서버로부터 메시지를 수신하는 메서드
         while (true){
             try{
@@ -54,7 +51,7 @@ public class Main extends javafx.application.Application {
                 byte[] buffer = new byte[512];
                 int length = in.read(buffer);
                 if(length==-1) throw new IOException();
-                String message = new String(buffer,0,length,"UTF-8");
+                String message = new String(buffer,0,length, StandardCharsets.UTF_8);
                 Platform.runLater(()->{
                     textArea.appendText(message);
                 });
@@ -64,25 +61,21 @@ public class Main extends javafx.application.Application {
             }
         }
     }
-
     public void send(String message){//서버로 메시지를 전송하는 메서드
-        Thread thread = new Thread(){
-            public void run(){
-                try{
-                    OutputStream out = socket.getOutputStream();
-                    byte[] buffer =message.getBytes("UTF-8");
-                    out.write(buffer);
-                    out.flush();
-                }catch (Exception e){
-                    stopClient();
-                }
+        Thread thread = new Thread(() -> {
+            try{
+                OutputStream out = socket.getOutputStream();
+                byte[] buffer =message.getBytes(StandardCharsets.UTF_8);
+                out.write(buffer);
+                out.flush();
+            }catch (Exception e){
+                stopClient();
             }
-        };
+        });
         thread.start();
     }
-    
     @Override
-    public void start(Stage primaryStage) throws IOException {//프로그램 동작 메서드
+    public void start(Stage primaryStage) {//프로그램 동작 메서드
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(5));
 
